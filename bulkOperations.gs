@@ -345,7 +345,6 @@ function bulkOperateOnStudents(e) {
       for (var i=0; i<studentObjects.length; i++) {
         var idsProcessed = [];
         var rsfsProcessed = [];
-        var sEmail = studentObjects[i]['sEmail'];
         var dbfId = studentObjects[i]['dbfId'];
         var cvfId = studentObjects[i]['cvfId'];
         var cefId = studentObjects[i]['cefId']; 
@@ -439,7 +438,6 @@ function bulkOperateOnStudents(e) {
       for (var i=0; i<studentObjects.length; i++) {
         var idsProcessed = [];
         var rsfsProcessed = [];
-        var sEmail = studentObjects[i]['sEmail'];
         var dbfId = studentObjects[i]['dbfId'];
         var cvfId = studentObjects[i]['cvfId'];
         var cefId = studentObjects[i]['cefId']; 
@@ -530,7 +528,6 @@ function bulkOperateOnStudents(e) {
       tEmail = tEmail.replace(/\s/g, "");
       for (var i=0; i<studentObjects.length; i++) {
         var idsProcessed = [];
-        var sEmail = studentObjects[i]['sEmail'];
         var dbfId = studentObjects[i]['dbfId'];
         var cvfId = studentObjects[i]['cvfId'];
         var cefId = studentObjects[i]['cefId']; 
@@ -592,7 +589,6 @@ function bulkOperateOnStudents(e) {
       tEmail = tEmail.replace(/\s/g, "");
       for (var i=0; i<studentObjects.length; i++) {
         var idsProcessed = [];
-        var sEmail = studentObjects[i]['sEmail'];
         var dbfId = studentObjects[i]['dbfId'];
         var cvfId = studentObjects[i]['cvfId'];
         var cefId = studentObjects[i]['cefId']; 
@@ -667,7 +663,6 @@ function bulkOperateOnStudents(e) {
       var destinationCrfId = destinationCrfObject.crfId;
       for (var i=0; i<studentObjects.length; i++) {
         var idsProcessed = [];
-        var sEmail = studentObjects[i]['sEmail'];
         var dbfId = studentObjects[i]['dbfId'];
         var cvfId = studentObjects[i]['cvfId'];
         var cefId = studentObjects[i]['cefId']; 
