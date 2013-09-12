@@ -118,11 +118,18 @@ function gClassFolders_lang() {
   .setWidget(2, 0, app.createLabel(defaultLabels.class)).setWidget(2, 1, app.createTextBox().setName('class').setValue(t(defaultLabels.class)))
   .setWidget(3, 0, app.createLabel(defaultLabels.classes)).setWidget(3, 1, app.createTextBox().setName('classes').setValue(t(defaultLabels.classes)))
   .setWidget(4, 0, app.createLabel(defaultLabels.period)).setWidget(4, 1, app.createTextBox().setName('period').setValue(t(defaultLabels.period)));
+
+  // KSDFORK
+  var nameDisplayLabel = app.createLabel(t("Check the box if you want 'First name last initial' display of student names")).setId('nameDisplayLabel').setStyleAttribute('marginTop', '5px');
+  var nameDisplayCheck = app.createCheckBox(t("First name last initial display")).setId("nameDisplayCheck").setName("nameDisplay").setFormValue("firstli");
+
   panel.add(title);
   panel.add(label);
   panel.add(listBox);
   panel.add(namingLabel);
   panel.add(namingGrid);
+  panel.add(nameDisplayLabel);
+  panel.add(nameDisplayCheck);
   
   var title2 = app.createLabel(t("Indicate how you plan to run gClassFolders")).setId('title2').setStyleAttribute('fontSize', '18px').setStyleAttribute('marginTop', '20px');
   var listBox2 = app.createListBox().setName('mode').setStyleAttribute('marginTop', '10px').setId('listBox2');
@@ -155,6 +162,11 @@ function refreshLangPanel(e) {
   var label = app.getElementById('langLabel');
   var namingLabel = app.getElementById('namingLabel');
   var namingGrid = app.getElementById('namingGrid');
+  
+  // KSDFORK
+  var nameDisplayLabel = app.getElementById('nameDisplayLabel');
+  var nameDisplayCheck = app.getElementById('nameDisplayCheck');
+  
   var button = app.getElementById('button');
   var defaultLabels = {dropBox: "Assignment Folder", dropBoxes: "Assignment Folders", class: "Class", classes: "Classes", period: "Period"};
   var lang = e.parameter.lang;
@@ -168,6 +180,9 @@ function refreshLangPanel(e) {
   .setWidget(2, 0, app.createLabel(defaultLabels.class)).setWidget(2, 1, app.createTextBox().setName('class').setValue(t(defaultLabels.class)))
   .setWidget(3, 0, app.createLabel(defaultLabels.classes)).setWidget(3, 1, app.createTextBox().setName('classes').setValue(t(defaultLabels.classes)))
   .setWidget(4, 0, app.createLabel(defaultLabels.period)).setWidget(4, 1, app.createTextBox().setName('period').setValue(t(defaultLabels.period)));
+  nameDisplayLabel.setText(t("Check the box if you want 'First name last initial' display of student names"));
+  nameDisplayCheck.setText(t("First name last initial display"));
+  
   var title2 = app.getElementById('title2');
   var listBox2 = app.getElementById('listBox2');
   var description = app.getElementById('description');
@@ -218,10 +233,19 @@ function saveLangSettings(e) {
   var classes = e.parameter.classes;
   var period = e.parameter.period;
   var mode = e.parameter.mode;
+  
+  // KSDFORK
+  var nameDisplay = e.parameter.nameDisplay;
+  if (nameDisplay != 'firstli') {
+    nameDisplay = 'lastfirst';
+  }
+  
   properties.labels = Utilities.jsonStringify({dropBox: dropBox, dropBoxes: dropBoxes, class: class, classes: classes, period: period});
   properties.lang = lang;
   properties.mode = mode;
   properties.ssKey = SpreadsheetApp.getActiveSpreadsheet().getId();
+  properties.studentNameDisplay = nameDisplay;
+  
   ScriptProperties.setProperties(properties);
   if ((mode=="school")&&(!properties.scriptUrl)) {
     howToPublishAsWebApp();
@@ -669,11 +693,17 @@ function createClassFolders(){ //Create student folders
         //If a class period is chosen, look to see if it is new or already existing
         if (clsPer != "") {
           var uniqueClasses = getUniqueClassPeriods(dataRange, indices.clsNameIndex, indices.clsPerIndex, indices.rsfIdIndex, labelObject); //get unique ClassPer as array
-          if (uniqueClasses.indexOf(clsName + " " + periodLabel + " " + clsPer)==-1) { //look to see if this row's ClassPer exists in the array.  If not make a new student dropbox folder for the period
-            rootStuFolderId = DocsList.getFolderById(dropboxLabelId).createFolder(clsName + " " + periodLabel + " " + clsPer + " " + dropBoxLabels).getId();
-            clsFoldersCreated.push(clsName + " " + periodLabel + " " + clsPer);
+          // KSDFORK DRY
+          var clsPerName = clsName + " " + periodLabel + " " + clsPer;
+          if (uniqueClasses.indexOf(clsPerName)==-1) { //look to see if this row's ClassPer exists in the array.  If not make a new student dropbox folder for the period
+            rootStuFolderId = DocsList.getFolderById(dropboxLabelId).createFolder(clsPerName + " " + dropBoxLabels).getId();
+            clsFoldersCreated.push(clsPerName);
             for (var j=0; j<tEmails.length; j++) {
               if ((tEmails[j] != "")&&(tEmails[j] != userEmail)) {
+                // KSDFORK TODO - If we had another column for the shared account
+                // rather than just adding it to the teacher emails, we would 
+                // probably make the shared account a viewer here rather than
+                // an editor.
                 DocsList.getFolderById(rootStuFolderId).addEditor(tEmails[j]);
               }
             }
@@ -751,6 +781,10 @@ function createDropbox(sLnameF,sFnameF,sEmailF,clsNameF,classEditIdF,classViewId
       var studentClassRoot = DocsList.createFolder(clsNameF);
       returnObject.studentClassRootId = studentClassRoot.getId();
       studentClassRoot.addViewer(sEmailF);
+      // KSDFORK TODO - If we had another column for the shared account
+      // rather than just adding it to the teacher emails, we would 
+      // probably make the shared account a viewer here rather than
+      // an editor.      
     } catch(err) {
       if (err.message.search("too many times")>0) {
         Browser.msgBox(t("You have exceeded your account quota for creating Folders.  Try waiting 24 hours and continue running from where you left off. For best results with this script, be sure you are using a Google Apps for EDU account. For quota information, visit https://docs.google.com/macros/dashboard", lang));
@@ -758,7 +792,22 @@ function createDropbox(sLnameF,sFnameF,sEmailF,clsNameF,classEditIdF,classViewId
       }
     }
   }
-  var dropboxNameF = sLnameF + ", " + sFnameF + " - " + clsNameF + " - " + dropboxLabel;
+
+  // KSDFORK - Custom naming of student dropbox folders
+  var dropboxNameF;
+  if (properties.studentNameDisplay != 'firstli') {
+    dropboxNameF = sLnameF + ", " + sFnameF + " - " + clsNameF;
+  } else {
+    if (sLnameF != "") {
+      dropboxNameF = sFnameF + " " + sLnameF.substring(0, 1) + " - " + clsNameF;
+    } else {
+      dropboxNameF = sFnameF + " - " + clsNameF;
+    }
+  }
+  if (dropboxLabel != "" && dropboxLabel.toUpperCase() != "OMIT") {
+    dropboxNameF += " - " + dropboxLabel;
+  }
+  
   var rootStudentFolder = DocsList.getFolderById(rootStuFolderId);
   var studentDropbox = rootStudentFolder.createFolder(dropboxNameF);
   returnObject.statusTagF = dropboxLabel + t(" created", lang);
